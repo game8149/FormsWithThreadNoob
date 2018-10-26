@@ -84,7 +84,75 @@ namespace apcy.Tools.Entidad
         //    return listFormated;
         //}
 
+        public static TreeObject ConvertListToTreeObject<T>(List<T> data, string nameKeyProp, string nameParentProp, object rootValue)
+        {
 
+            if (rootValue==null) throw new HelperException("Root value needed.");
+            if (string.IsNullOrEmpty(nameKeyProp)) throw new HelperException("Key property name needed.");
+            if (string.IsNullOrEmpty(nameParentProp)) throw new HelperException("Parent property name needed.");
+
+            TreeObject tree = new TreeObject();
+            Type itemsType = typeof(T); 
+            TreeObjectNode node = null;
+            object keyVal = null;
+            object parentVal = null; //usually types are primitives
+
+            foreach (T obj in data)
+            { 
+                foreach (System.Reflection.PropertyInfo prop in itemsType.GetProperties())
+                {
+                    if (nameKeyProp.Equals(prop.Name))
+                        keyVal = prop.GetValue(obj, null);
+                    if (nameParentProp.Equals(prop.Name))
+                        parentVal = prop.GetValue(obj, null);
+                }
+                
+                if (parentVal.ToString() == rootValue.ToString())
+                {
+                    node = new TreeObjectNode
+                    {
+                        Data = obj,
+                        IdParent = parentVal,
+                        Id = keyVal
+                    }; 
+                    tree.InsertRoot(node);
+                    BuildChildren<T>(data, node, nameKeyProp, nameParentProp);
+                } 
+            } 
+            return tree;
+        }
+
+        private static void BuildChildren<T>(List<T> data, TreeObjectNode nodeParent, string nameKeyProp, string nameParentProp)
+        { 
+            Type itemsType = typeof(T);
+            TreeObjectNode node = null;
+            object keyVal = null;
+            object parentVal = null; //usually types primitives
+
+            foreach (T obj in data)
+            {
+                foreach (System.Reflection.PropertyInfo prop in itemsType.GetProperties())
+                {
+                    if (nameKeyProp.Equals(prop.Name))
+                        keyVal = prop.GetValue(obj, null);
+                    if (nameParentProp.Equals(prop.Name))
+                        parentVal = prop.GetValue(obj, null);
+                }
+
+                if (parentVal.ToString() == nodeParent.Id.ToString())
+                {
+                    node = new TreeObjectNode
+                    {
+                        Data = obj,
+                        IdParent = parentVal,
+                        Id = keyVal
+                    };
+                    nodeParent.InsertChild(node);
+                    BuildChildren<T>(data, node, nameKeyProp, nameParentProp);
+                }
+            }
+
+        }
 
     }
 
